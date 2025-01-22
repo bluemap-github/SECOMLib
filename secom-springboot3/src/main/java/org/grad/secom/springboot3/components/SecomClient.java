@@ -30,6 +30,7 @@ import org.grad.secom.core.models.*;
 import org.grad.secom.core.models.enums.ContainerTypeEnum;
 import org.grad.secom.core.models.enums.SECOM_DataProductType;
 import org.grad.secom.core.utils.KeyStoreUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -81,6 +82,9 @@ import static org.grad.secom.core.interfaces.UploadSecomInterface.UPLOAD_INTERFA
  * @author Nikolaos Vastardis (email: Nikolaos.Vastardis@gla-rad.org)
  */
 public class SecomClient {
+
+    @Value("${secom.request.host:#{null}}")  // 값이 없으면 null 반환
+    private String requestHost;
 
     // Class Variables
     WebClient secomClient;
@@ -620,6 +624,7 @@ public class SecomClient {
                 .uri(UPLOAD_LINK_INTERFACE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
+                .header("X-Request-Host", requestHost)  // 헤더에 호스트 정보를 추가
                 .body(BodyInserters.fromValue(uploadLinkObject))
                 .retrieve()
                 .bodyToMono(UploadLinkResponseObject.class)
