@@ -82,9 +82,6 @@ import static org.grad.secom.core.interfaces.UploadSecomInterface.UPLOAD_INTERFA
  */
 public class SecomClient {
 
-    @Value("${secom.request.host:#{null}}")  // 값이 없으면 null 반환
-    private String requestHost;
-
     // Class Variables
     WebClient secomClient;
     SecomCertificateProvider certificateProvider;
@@ -604,7 +601,7 @@ public class SecomClient {
      * @param uploadLinkObject  the upload link object
      * @return the upload link response object
      */
-    public Optional<UploadLinkResponseObject> uploadLink(UploadLinkObject uploadLinkObject) {
+    public Optional<UploadLinkResponseObject> uploadLink(String requestHost, UploadLinkObject uploadLinkObject) {
         //Prepare the upload link envelope if valid
         final EnvelopeLinkObject envelope = uploadLinkObject.getEnvelope();
         if(envelope != null) {
