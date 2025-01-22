@@ -62,7 +62,7 @@ public interface UploadLinkSecomInterface extends GenericSecomInterface {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    UploadLinkResponseObject uploadLink(@Valid UploadLinkObject uploadLinkObject);
+    UploadLinkResponseObject uploadLink(@HeaderParam("X-Request-Host") String requestHost, @Valid UploadLinkObject uploadLinkObject);
 
     /**
      * The exception handler implementation for the interface.
