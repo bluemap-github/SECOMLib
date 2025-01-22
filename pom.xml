@@ -6,7 +6,7 @@
     <groupId>org.grad.secom</groupId>
     <artifactId>secom-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.47</version>
+    <version>0.0.50</version>
 
     <modules>
         <module>secom-core</module>
@@ -32,6 +32,10 @@
     </properties>
 
     <repositories>
+        <repository>
+            <id>maven-central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
         <repository>
             <id>grad</id>
             <url>https://rnavlab.gla-rad.org/mvn/repository/grad/</url>
