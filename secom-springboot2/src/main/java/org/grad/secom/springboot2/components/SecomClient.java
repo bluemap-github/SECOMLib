@@ -223,12 +223,13 @@ public class SecomClient {
      * @param accessRequestObject the request access object
      * @return the request access response object
      */
-    public Optional<AccessResponseObject> requestAccess(AccessRequestObject accessRequestObject) {
+    public Optional<AccessResponseObject> requestAccess(String requestHost, AccessRequestObject accessRequestObject) {
         return this.secomClient
                 .post()
                 .uri(ACCESS_INTERFACE_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
+                .header("X-Request-Host", requestHost)  // 헤더에 호스트 정보를 추가
                 .body(BodyInserters.fromValue(accessRequestObject))
                 .retrieve()
                 .bodyToMono(AccessResponseObject.class)

@@ -59,7 +59,7 @@ public interface AccessSecomInterface extends GenericSecomInterface {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    AccessResponseObject requestAccess(@Valid AccessRequestObject accessRequestObject);
+    AccessResponseObject requestAccess(@HeaderParam("X-Request-Host") String requestHost, @Valid AccessRequestObject accessRequestObject);
 
     /**
      * The exception handler implementation for the interface.
