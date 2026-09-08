@@ -21,17 +21,21 @@ import io.swagger.v3.jaxrs2.integration.resources.AcceptHeaderOpenApiResource;
 import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import jakarta.ws.rs.ApplicationPath;
 import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.ext.ExceptionMapper;
 import org.grad.secom.core.base.*;
 import org.grad.secom.core.components.*;
 import org.jboss.resteasy.plugins.interceptors.CorsFilter;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * JAX-RS application
@@ -40,28 +44,27 @@ import java.util.stream.Stream;
  */
 @Configuration
 @ApplicationPath("/api/secom/")
-public class JaxrsApplication extends Application {
+public class SecomV1JaxrsApplication extends Application implements ApplicationContextAware {
 
     /**
-     * Initialise the SECOM object mapping operation with the Springboot object
-     * mapper.
-     *
-     * @param objectMapper the autowired object mapper
-     * @return the object mapper provider
+     * The Springboot Application Context.
      */
-    @Bean()
-    SecomObjectMapperProvider secomObjectMapperProvider(@Autowired ObjectMapper objectMapper) {
-        return new SecomObjectMapperProvider(objectMapper);
-    }
+    private ApplicationContext applicationContext;
+
+    /**
+     * Autowiring the Springboot Object Mapper
+     */
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /**
      * Initialise the SECOM exception mapper.
      *
      * @return the SECOM exception mapper bean
      */
-    @Bean
-    SecomExceptionMapper secomExceptionMapper() {
-        return new SecomExceptionMapper();
+    @Bean("secomV1ExceptionMapper")
+    SecomV1ExceptionMapper secomExceptionMapper() {
+        return new SecomV1ExceptionMapper(this);
     }
 
     /**
@@ -69,7 +72,7 @@ public class JaxrsApplication extends Application {
      *
      * @return the SECOM writer interceptor bean
      */
-    @Bean
+    @Bean("secomV1WriterInterceptor")
     SecomWriterInterceptor secomWriterInterceptor(@Autowired(required = false) SecomCompressionProvider compressionProvider,
                                                   @Autowired(required = false) SecomEncryptionProvider encryptionProvider,
                                                   @Autowired(required = false) SecomCertificateProvider certificateProvider,
@@ -82,7 +85,7 @@ public class JaxrsApplication extends Application {
      *
      * @return the SECOM signature filter bean
      */
-    @Bean
+    @Bean("secomV1SignatureFilter")
     SecomSignatureFilter secomSignatureFilter(@Autowired(required = false) SecomCompressionProvider compressionProvider,
                                               @Autowired(required = false) SecomEncryptionProvider encryptionProvider,
                                               @Autowired(required = false) SecomTrustStoreProvider trustStoreProvider,
@@ -95,40 +98,10 @@ public class JaxrsApplication extends Application {
      *
      * @return the SECOM reader interceptor bean
      */
-    @Bean
+    @Bean("secomV1ReaderInterceptor")
     SecomReaderInterceptor secomReaderInterceptor(@Autowired(required = false) SecomCompressionProvider compressionProvider,
                                                   @Autowired(required = false) SecomEncryptionProvider encryptionProvider) {
         return new SecomReaderInterceptor(compressionProvider, encryptionProvider);
-    }
-
-    /**
-     * Initialise the ContainerType Converter Provider bean.
-     *
-     * @return the ContainerType Converter Provider bean
-     */
-    @Bean
-    ContainerTypeConverterProvider containerTypeConverterProvider() {
-        return new ContainerTypeConverterProvider();
-    }
-
-    /**
-     * Initialise the DigitalSignatureAlgorithmEnum Converter Provider bean.
-     *
-     * @return the DigitalSignatureAlgorithmEnum Converter Provider bean
-     */
-    @Bean
-    DigitalSignatureAlgorithmConverterProvider digitalSignatureAlgorithmConverterProvider() {
-        return new DigitalSignatureAlgorithmConverterProvider();
-    }
-
-    /**
-     * Initialise the LocalDateTime Converter Provider bean.
-     *
-     * @return the LocalDateTime Converter Provider bean
-     */
-    @Bean
-    LocalDateTimeConverterProvider localDateTimeConverterProvider() {
-        return new LocalDateTimeConverterProvider();
     }
 
     /**
@@ -138,7 +111,16 @@ public class JaxrsApplication extends Application {
      */
     @Override
     public Set<Class<?>> getClasses() {
-        return Stream.of(OpenApiResource.class, AcceptHeaderOpenApiResource.class).collect(Collectors.toSet());
+        return Set.of(
+                OpenApiResource.class,
+                AcceptHeaderOpenApiResource.class,
+                /*
+                 * Add the JaxRS Application Providers.
+                 */
+                InstantToS100ConverterProvider.class,
+                ContainerTypeConverterProvider.class,
+                DigitalSignatureAlgorithmConverterProvider.class
+        );
     }
 
     /**
@@ -152,7 +134,51 @@ public class JaxrsApplication extends Application {
         corsFilter.getAllowedOrigins().add("*");
         corsFilter.setAllowedMethods("OPTIONS, GET, POST, DELETE, PUT, PATCH");
         corsFilter.setAllowCredentials(false);
-        return Collections.singleton(corsFilter);
+        return Set.of(
+                corsFilter,
+                /*
+                 * Add the JaxRS Application Object Mapper.
+                 */
+                new SecomObjectMapperProvider(Optional.ofNullable(this.objectMapper)
+                        .orElse(new ObjectMapper()))
+        );
+    }
+
+    /**
+     * Returns the properties of the JaxRS application. This is actually
+     * also used internally to provide access to all registered RestEasy
+     * Exception mappers.
+     *
+     * @return the set of properties to be registered
+     */
+    @Override
+    public Map<String, Object> getProperties() {
+        return this.applicationContext.getBeansOfType(ExceptionMapper.class)
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    /**
+     * Allows the retrieval of the Springboot application context.
+     *
+     * @return the Springboot application context
+     */
+    public ApplicationContext getApplicationContext() {
+        return this.applicationContext;
+    }
+
+    /**
+     * Implements the setApplicationContext() function of the Springboot
+     * ApplicationContextAware interface so that the JaxRS application can
+     * have access to the application context.
+     *
+     * @param applicationContext the Springboot application context
+     * @throws BeansException if an exception on the bean generation is thrown
+     */
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 
 }

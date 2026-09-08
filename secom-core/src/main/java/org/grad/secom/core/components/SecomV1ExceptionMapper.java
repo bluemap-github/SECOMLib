@@ -17,14 +17,15 @@
 package org.grad.secom.core.components;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.grad.secom.core.base.SecomConstants;
 import org.grad.secom.core.interfaces.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
+import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+import javax.ws.rs.ext.Providers;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -49,7 +50,16 @@ import static org.grad.secom.core.interfaces.SubscriptionSecomInterface.SUBSCRIP
  * @author Nikolaos Vastardis (email: Nikolaos.Vastardis@gla-rad.org)
  */
 @Provider
-public class SecomExceptionMapper implements ExceptionMapper<Exception> {
+public class SecomV1ExceptionMapper implements ExceptionMapper<Exception>, ContextResolver<ExceptionMapper<Exception>> {
+
+    // Class Variables
+    private Application application;
+
+    /**
+     * The JAX-RS Providers Context.
+     */
+    @Context
+    private Providers providers;
 
     /**
      * The Request Context.
@@ -58,20 +68,42 @@ public class SecomExceptionMapper implements ExceptionMapper<Exception> {
     private HttpServletRequest request;
 
     /**
-     * The Request Header.
+     * The Request URI Information.
      */
     @Context
-    private HttpHeaders headers;
+    private UriInfo uriInfo;
+
+    /**
+     * A constructor to return a reference to the application being served.
+     *
+     * @param application the application being served.
+     */
+    public SecomV1ExceptionMapper(Application application) {
+        this.application = application;
+    }
 
     /**
      * Generate the response based on the exceptions thrown by the respective
      * SECOM endpoint called. This can be extracted by the request context.
      *
-     * @param ex the exception that was thrownn
+     * @param ex the exception that was thrown
      * @return the response to be returned
      */
     @Override
     public Response toResponse(Exception ex) {
+        // This is not our error, propagate
+        if(!this.uriInfo.getPath().startsWith("/" + SecomConstants.SECOM_VERSION)) {
+            final PathSegment secomVersion = uriInfo.getPathSegments().getFirst();
+            final ExceptionMapper<Exception> secomExceptionMapper = Optional.ofNullable(secomVersion)
+                    .map(PathSegment::toString)
+                    .map(String::toUpperCase)
+                    .map(v -> String.format("secom%sExceptionMapper", v))
+                    .map(this.application.getProperties()::get)
+                    .map(obj -> (ExceptionMapper<Exception>)obj)
+                    .orElseThrow(() -> new RuntimeException(ex));
+            return secomExceptionMapper.toResponse(ex);
+        }
+
         //First log the message
         final Logger secomLogger = Logger.getLogger(Optional.of(ex)
                 .map(Exception::getCause)
@@ -134,6 +166,20 @@ public class SecomExceptionMapper implements ExceptionMapper<Exception> {
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(Response.Status.INTERNAL_SERVER_ERROR.getReasonPhrase())
                 .build();
+    }
+
+    /**
+     * Return the established exception mapper when required.
+     *
+     * @param type the type of the class to return the object mapper for
+     * @return the appropriate object mapper
+     */
+    @Override
+    public ExceptionMapper<Exception> getContext(Class<?> type) {
+        if (type.isInstance(ExceptionMapper.class)) {
+            return this;
+        }
+        return null;
     }
 
 }

@@ -16,21 +16,24 @@
 
 package org.grad.secom.core.components;
 
+import org.grad.secom.core.base.SecomV1Param;
 import org.grad.secom.core.exceptions.SecomValidationException;
 import org.grad.secom.core.models.enums.ContainerTypeEnum;
 
 import jakarta.ws.rs.ext.ParamConverter;
 import jakarta.ws.rs.ext.ParamConverterProvider;
-import jakarta.ws.rs.ext.Provider;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * The LocalDateTime Converter Provider.
+ * The Instant Converter Provider.
  *
  * @author Nikolaos Vastardis (email: Nikolaos.Vastardis@gla-rad.org)
  */
-@Provider
 public class ContainerTypeConverterProvider implements ParamConverterProvider {
 
     // Class Variables
@@ -47,7 +50,8 @@ public class ContainerTypeConverterProvider implements ParamConverterProvider {
      */
     @Override
     public <T> ParamConverter<T> getConverter(Class<T> aClass, Type type, Annotation[] annotations) {
-        if (!aClass.equals(ContainerTypeEnum.class)) return null;
+        final Set<Class<?>> annotationClasses = Stream.of(annotations).map(Annotation::annotationType).collect(Collectors.toSet());
+        if (!aClass.equals(ContainerTypeEnum.class) || !annotationClasses.contains(SecomV1Param.class)) return null;
         return (ParamConverter<T>) converter;
     }
 

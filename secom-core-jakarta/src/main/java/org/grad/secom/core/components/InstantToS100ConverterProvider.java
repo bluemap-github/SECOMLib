@@ -16,29 +16,29 @@
 
 package org.grad.secom.core.components;
 
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.ParamConverterProvider;
+import org.grad.secom.core.base.SecomV1Param;
 import org.grad.secom.core.exceptions.SecomValidationException;
 
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.ParamConverterProvider;
-import javax.ws.rs.ext.Provider;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.grad.secom.core.base.SecomConstants.SECOM_DATE_TIME_FORMATTER;
 
 /**
- * The LocalDateTime Converter Provider.
+ * The Instant To S-100 Format Converter Provider.
  *
  * @author Nikolaos Vastardis (email: Nikolaos.Vastardis@gla-rad.org)
  */
-@Provider
-public class LocalDateTimeConverterProvider implements ParamConverterProvider {
+public class InstantToS100ConverterProvider implements ParamConverterProvider {
 
     // Class Variables
-    private final LocalDateTimeConverter converter = new LocalDateTimeConverter();
+    private final InstantConverter converter = new InstantConverter();
 
     /**
      * Implement the converter provision function.
@@ -51,16 +51,17 @@ public class LocalDateTimeConverterProvider implements ParamConverterProvider {
      */
     @Override
     public <T> ParamConverter<T> getConverter(Class<T> aClass, Type type, Annotation[] annotations) {
-        if (!aClass.equals(LocalDateTime.class)) return null;
+        final Set<Class<?>> annotationClasses = Stream.of(annotations).map(Annotation::annotationType).collect(Collectors.toSet());
+        if (!aClass.equals(Instant.class) || !annotationClasses.contains(SecomV1Param.class)) return null;
         return (ParamConverter<T>) converter;
     }
 
     /**
-     * The LocalDateTime Converter Class.
+     * The Instant Converter Class.
      *
      * @author Nikolaos Vastardis (email: Nikolaos.Vastardis@gla-rad.org)
      */
-    public class LocalDateTimeConverter implements ParamConverter<LocalDateTime> {
+    public static class InstantConverter implements ParamConverter<Instant> {
 
         /**
          * Implement the fromString operation.
@@ -68,14 +69,13 @@ public class LocalDateTimeConverterProvider implements ParamConverterProvider {
          * @param value the string value to be converted into an object
          * @return the converted object
          */
-        public LocalDateTime fromString(String value) {
+        public Instant fromString(String value) {
             if (value == null || value.isEmpty()) return null;
             try {
-                return LocalDateTime.parse(value, SECOM_DATE_TIME_FORMATTER);
+                return Instant.from(SECOM_DATE_TIME_FORMATTER.parse(value));
             } catch (Exception ex) { // Direct to BAD_REQUEST
                 throw new SecomValidationException(ex.getMessage());
             }
-
         }
 
         /**
@@ -84,11 +84,10 @@ public class LocalDateTimeConverterProvider implements ParamConverterProvider {
          * @param value the object to be converted into a string
          * @return the converted string
          */
-        public String toString(LocalDateTime value) {
+        public String toString(Instant value) {
             if (value == null) return "";
             try {
-                final ZonedDateTime zonedValue = value.atZone(ZoneId.systemDefault());
-                return SECOM_DATE_TIME_FORMATTER.format(zonedValue);
+                return SECOM_DATE_TIME_FORMATTER.format(value);
             } catch (Exception ex) { // Direct to BAD_REQUEST
                 throw new SecomValidationException(ex.getMessage());
             }

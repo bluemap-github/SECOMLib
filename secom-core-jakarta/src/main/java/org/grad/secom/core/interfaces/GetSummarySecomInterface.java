@@ -18,7 +18,11 @@ package org.grad.secom.core.interfaces;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.ws.rs.*;
+import org.grad.secom.core.base.SecomConstants;
+import org.grad.secom.core.base.SecomV1Param;
 import org.grad.secom.core.exceptions.SecomNotAuthorisedException;
 import org.grad.secom.core.exceptions.SecomNotFoundException;
 import org.grad.secom.core.exceptions.SecomValidationException;
@@ -33,7 +37,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * The SECOM Get Summary Interface Definition.
@@ -49,7 +53,7 @@ public interface GetSummarySecomInterface extends GenericSecomInterface {
     /**
      * The Interface Endpoint Path.
      */
-    String GET_SUMMARY_INTERFACE_PATH = "/v1/object/summary";
+    String GET_SUMMARY_INTERFACE_PATH = "/" + SecomConstants.SECOM_VERSION + "/object/summary";
 
     /**
      * GET /v1/object/summary :  A list of information shall be returned from
@@ -71,14 +75,14 @@ public interface GetSummarySecomInterface extends GenericSecomInterface {
     @Path(GET_SUMMARY_INTERFACE_PATH)
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    GetSummaryResponseObject getSummary(@QueryParam("containerType") ContainerTypeEnum containerType,
-                                        @QueryParam("dataProductType") SECOM_DataProductType dataProductType,
+    GetSummaryResponseObject getSummary(@QueryParam("containerType") @SecomV1Param ContainerTypeEnum containerType,
+                                        @QueryParam("dataProductType") @SecomV1Param SECOM_DataProductType dataProductType,
                                         @QueryParam("productVersion") String productVersion,
                                         @QueryParam("geometry") String geometry,
                                         @QueryParam("unlocode") @Pattern(regexp = "[A-Z]{5}") String unlocode,
-                                        @QueryParam("validFrom") LocalDateTime validFrom,
-                                        @QueryParam("validTo") LocalDateTime validTo,
-                                        @QueryParam("page") @Min(0) Integer page,
+                                        @QueryParam("validFrom") @Parameter(example = "20200101T123000", schema = @Schema(implementation = String.class, pattern = "(\\d{8})T(\\d{6})(Z|\\+\\d{4})?")) @SecomV1Param Instant validFrom,
+                                        @QueryParam("validTo") @Parameter(example = "20200101T123000", schema = @Schema(implementation = String.class, pattern = "(\\d{8})T(\\d{6})(Z|\\+\\d{4})?")) @SecomV1Param Instant validTo,
+                                        @QueryParam("page") @Min(1) Integer page,
                                         @QueryParam("pageSize") @Min(0) Integer pageSize);
 
     /**

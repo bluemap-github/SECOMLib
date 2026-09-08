@@ -19,14 +19,12 @@ package org.grad.secom.core.components;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
 
 /**
  * The ObjetMapper Provider.
  *
  * @author Nikolaos Vastardis (email: Nikolaos.Vastardis@gla-rad.org)
  */
-@Provider
 public class SecomObjectMapperProvider implements ContextResolver<ObjectMapper> {
 
     // Class Variables

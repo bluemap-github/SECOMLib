@@ -16,6 +16,7 @@
 
 package org.grad.secom.core.base;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 
@@ -32,6 +33,11 @@ public class SecomConstants {
      * The SECOM Data Protection Scheme.
      */
     public static final String SECOM_PROTECTION_SCHEME = "SECOM";
+
+    /**
+     * The SECOM Version.
+     */
+    public static final String SECOM_VERSION = "v1";
 
     /**
      * The Algorithm to be used for generating signatures.
@@ -66,7 +72,9 @@ public class SecomConstants {
                 .parseLenient()
                 .appendOffset("+HHMM", "Z")
                 .parseStrict()
-                .toFormatter();
+                .optionalEnd()
+                .toFormatter()
+                .withZone(ZoneId.systemDefault());
     }
     public static final String SECOM_DATE_TIME_FORMAT = SECOM_DATE_FORMAT + "'T'" + SECOM_TIME_FORMAT;
 
@@ -79,7 +87,9 @@ public class SecomConstants {
                 .parseLenient()
                 .appendOffset("+HHMM", "Z")
                 .parseStrict()
-                .toFormatter();
+                .optionalEnd()
+                .toFormatter()
+                .withZone(ZoneId.systemDefault());
     }
 
 }
